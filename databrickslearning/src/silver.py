@@ -1,19 +1,26 @@
 # Databricks notebook source
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp
 
 spark = SparkSession.builder.getOrCreate()
 
-# Read Bronze table
-df = spark.table("databrickslearning.dev.employee_raw")
+dbutils.widgets.text("catalog", "databrickslearning")
+dbutils.widgets.text("schema", "dev")
 
-# Silver transformation: remove duplicates and add processed timestamp
+catalog = dbutils.widgets.get("catalog")
+schema = dbutils.widgets.get("schema")
+
+source_table = f"{catalog}.{schema}.employee_raw"
+target_table = f"{catalog}.{schema}.employee_clean"
+
+df = spark.table(source_table)
+
 df_clean = (
     df.dropDuplicates(["emp_id"])
       .withColumn("processed_ts", current_timestamp())
 )
 
-# Write to Silver table
-df_clean.write.mode("overwrite").saveAsTable("databrickslearning.dev.employee_clean")
+df_clean.write.mode("overwrite").saveAsTable(target_table)
 
-print("Silver load completed")
+print(f"Silver load completed: {target_table}")
